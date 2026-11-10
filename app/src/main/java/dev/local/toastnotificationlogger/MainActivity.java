@@ -396,7 +396,7 @@ public final class MainActivity extends Activity {
         if (!safe.isEmpty()) {
             char first = safe.charAt(0);
             if (first == '=' || first == '+' || first == '-' || first == '@'
-                    || first == '\\t' || first == '\\r') {
+                    || first == '\t' || first == '\r') {
                 safe = "'" + safe;
             }
         }
