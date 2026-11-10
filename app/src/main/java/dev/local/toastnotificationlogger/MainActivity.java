@@ -254,7 +254,7 @@ public final class MainActivity extends Activity {
                 .setPositiveButton("Clear", (dialog, which) ->
                         databaseExecutor.execute(() -> {
                             database.deleteAll();
-                            loadEvents();
+                            mainHandler.post(this::loadEvents);
                         }))
                 .show();
     }
