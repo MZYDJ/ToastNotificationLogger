@@ -71,34 +71,34 @@ public final class MainActivity extends Activity {
         root.setPadding(padding, padding, padding, padding);
 
         TextView heading = new TextView(this);
-        heading.setText("Toast & Notification History");
+        heading.setText("Toast 与通知历史记录");
         heading.setTextSize(20);
         root.addView(heading);
 
         status = new TextView(this);
-        status.setText("Loading local history…");
+        status.setText("正在加载本地记录…");
         status.setPadding(0, dp(8), 0, dp(8));
         root.addView(status);
 
         packageFilter = new EditText(this);
         packageFilter.setSingleLine(true);
-        packageFilter.setHint("Package name (exact match)");
+        packageFilter.setHint("按应用包名筛选（精确匹配）");
         root.addView(packageFilter);
 
         typeFilter = new Spinner(this);
         List<String> types = new ArrayList<>();
-        types.add("All event types");
-        for (EventType type : EventType.values()) types.add(type.name());
+        types.add("全部事件类型");
+        for (EventType type : EventType.values()) types.add(eventTypeLabel(type));
         typeFilter.setAdapter(spinnerAdapter(types));
         root.addView(typeFilter);
 
         timeFilter = new Spinner(this);
         List<String> ranges = new ArrayList<>();
-        ranges.add("All time");
-        ranges.add("Last 24 hours");
-        ranges.add("Last 7 days");
-        ranges.add("Last 30 days");
-        ranges.add("Last 90 days");
+        ranges.add("全部时间");
+        ranges.add("最近 24 小时");
+        ranges.add("最近 7 天");
+        ranges.add("最近 30 天");
+        ranges.add("最近 90 天");
         timeFilter.setAdapter(spinnerAdapter(ranges));
         root.addView(timeFilter);
 
@@ -106,11 +106,11 @@ public final class MainActivity extends Activity {
         retentionRow.setOrientation(LinearLayout.HORIZONTAL);
         retentionFilter = new Spinner(this);
         List<String> retentionOptions = new ArrayList<>();
-        retentionOptions.add("Keep forever");
-        retentionOptions.add("Keep 7 days");
-        retentionOptions.add("Keep 30 days");
-        retentionOptions.add("Keep 90 days");
-        retentionOptions.add("Keep 365 days");
+        retentionOptions.add("永久保留");
+        retentionOptions.add("保留 7 天");
+        retentionOptions.add("保留 30 天");
+        retentionOptions.add("保留 90 天");
+        retentionOptions.add("保留 365 天");
         retentionFilter.setAdapter(spinnerAdapter(retentionOptions));
         SharedPreferences preferences = getSharedPreferences("logger_config", MODE_PRIVATE);
         int savedDays = preferences.getInt("retention_days", 0);
@@ -125,37 +125,40 @@ public final class MainActivity extends Activity {
         retentionRow.addView(retentionFilter, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         Button applyRetention = new Button(this);
-        applyRetention.setText("Apply retention");
+        applyRetention.setText("应用期限");
         applyRetention.setOnClickListener(v -> cleanupRetention(true));
         retentionRow.addView(applyRetention);
         root.addView(retentionRow);
 
         LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout actionRowOne = new LinearLayout(this);
+        actionRowOne.setOrientation(LinearLayout.HORIZONTAL);
         Button apply = new Button(this);
-        apply.setText("Filter");
+        apply.setText("筛选");
         apply.setOnClickListener(v -> loadEvents());
-        actions.addView(apply);
-
+        addWeightedButton(actionRowOne, apply);
         Button refresh = new Button(this);
-        refresh.setText("Refresh");
+        refresh.setText("刷新");
         refresh.setOnClickListener(v -> loadEvents());
-        actions.addView(refresh);
-
+        addWeightedButton(actionRowOne, refresh);
         Button export = new Button(this);
-        export.setText("Export CSV");
+        export.setText("导出 CSV");
         export.setOnClickListener(v -> startCsvExport());
-        actions.addView(export);
+        addWeightedButton(actionRowOne, export);
+        actions.addView(actionRowOne);
 
+        LinearLayout actionRowTwo = new LinearLayout(this);
+        actionRowTwo.setOrientation(LinearLayout.HORIZONTAL);
         Button excluded = new Button(this);
-        excluded.setText("Excluded apps");
+        excluded.setText("排除应用");
         excluded.setOnClickListener(v -> manageExcludedApps());
-        actions.addView(excluded);
-
+        addWeightedButton(actionRowTwo, excluded);
         Button clear = new Button(this);
-        clear.setText("Clear all");
+        clear.setText("清空记录");
         clear.setOnClickListener(v -> confirmClear());
-        actions.addView(clear);
+        addWeightedButton(actionRowTwo, clear);
+        actions.addView(actionRowTwo);
         root.addView(actions);
 
         ListView list = new ListView(this);
@@ -169,6 +172,25 @@ public final class MainActivity extends Activity {
         if (savedDays > 0) cleanupRetention(false); else loadEvents();
     }
 
+    private void addWeightedButton(LinearLayout row, Button button) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        params.setMargins(dp(3), 0, dp(3), 0);
+        button.setMinWidth(0);
+        row.addView(button, params);
+    }
+
+    private static String eventTypeLabel(EventType type) {
+        switch (type) {
+            case TOAST_TEXT_REQUESTED: return "文本 Toast";
+            case TOAST_CUSTOM_REQUESTED: return "自定义 Toast";
+            case NOTIFICATION_POSTED: return "通知发布";
+            case NOTIFICATION_UPDATED: return "通知更新";
+            case NOTIFICATION_REMOVED: return "通知撤销";
+            default: return type.name();
+        }
+    }
+
     private ArrayAdapter<String> spinnerAdapter(List<String> values) {
         ArrayAdapter<String> result = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, values);
@@ -177,7 +199,7 @@ public final class MainActivity extends Activity {
     }
 
     private void loadEvents() {
-        status.setText("Loading…");
+        status.setText("正在加载…");
         String packageName = packageFilter.getText().toString().trim();
         if (packageName.isEmpty()) packageName = null;
         final String selectedPackage = packageName;
@@ -215,7 +237,7 @@ public final class MainActivity extends Activity {
                         "MM-dd HH:mm:ss", Locale.getDefault());
                 for (EventRecord event : loaded) {
                     String packageLabel = event.packageName == null
-                            ? "(unknown package)"
+                            ? "未知应用"
                             : appLabels.getOrDefault(event.packageName, event.packageName);
                     String summary = firstNonEmpty(event.title, event.text);
                     String row = format.format(new Date(event.timestampMillis))
@@ -225,7 +247,7 @@ public final class MainActivity extends Activity {
                     rows.add(row);
                 }
                 adapter.notifyDataSetChanged();
-                status.setText(loaded.size() + " event(s) in this view");
+                status.setText("当前显示 " + loaded.size() + " 条记录");
             });
         });
     }
@@ -233,7 +255,7 @@ public final class MainActivity extends Activity {
     private void showDetails(int position) {
         if (position < 0 || position >= events.size()) return;
         EventRecord event = events.get(position);
-        String details = "Time: " + new Date(event.timestampMillis)
+        String details = "时间：" + new Date(event.timestampMillis)
                 + "\nType: " + event.type
                 + "\nPackage: " + value(event.packageName)
                 + "\nApp: " + value(appLabels.get(event.packageName))
@@ -244,7 +266,7 @@ public final class MainActivity extends Activity {
                 + "\nUser ID: " + value(event.userId)
                 + "\nRemoval reason: " + value(event.removalReason);
         new AlertDialog.Builder(this)
-                .setTitle("Event details")
+                .setTitle("事件详情")
                 .setMessage(details)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
@@ -256,29 +278,29 @@ public final class MainActivity extends Activity {
                 "excluded_packages", Collections.emptySet()));
         EditText packageName = new EditText(this);
         packageName.setSingleLine(true);
-        packageName.setHint("Example: com.example.app");
+        packageName.setHint("输入包名，例如 com.example.app");
         String current = excluded.isEmpty()
-                ? "No excluded packages"
+                ? "当前没有排除任何应用"
                 : "Currently excluded:\n" + android.text.TextUtils.join("\\n", excluded);
         new AlertDialog.Builder(this)
-                .setTitle("Excluded applications")
+                .setTitle("管理排除应用")
                 .setMessage(current)
                 .setView(packageName)
-                .setPositiveButton("Exclude", (dialog, which) -> {
+                .setPositiveButton("添加排除", (dialog, which) -> {
                     String value = packageName.getText().toString().trim();
                     if (value.isEmpty()) return;
                     excluded.add(value);
                     preferences.edit().putStringSet(
                             "excluded_packages", new HashSet<>(excluded)).apply();
-                    status.setText("Excluded " + value);
+                    status.setText("已排除应用：" + value);
                 })
-                .setNeutralButton("Remove", (dialog, which) -> {
+                .setNeutralButton("移除排除", (dialog, which) -> {
                     String value = packageName.getText().toString().trim();
                     if (value.isEmpty()) return;
                     excluded.remove(value);
                     preferences.edit().putStringSet(
                             "excluded_packages", new HashSet<>(excluded)).apply();
-                    status.setText("Removed exclusion for " + value);
+                    status.setText("已取消排除：" + value);
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -294,7 +316,7 @@ public final class MainActivity extends Activity {
     private void cleanupRetention(boolean showStatus) {
         int days = RETENTION_DAYS[retentionFilter.getSelectedItemPosition()];
         if (days == 0) {
-            if (showStatus) status.setText("Retention disabled; history is kept indefinitely");
+            if (showStatus) status.setText("已设置为永久保留记录");
             return;
         }
         long cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000;
@@ -302,7 +324,7 @@ public final class MainActivity extends Activity {
             int deleted = database.deleteOlderThan(cutoff);
             mainHandler.post(() -> {
                 if (destroyed) return;
-                if (showStatus) status.setText("Retention cleanup removed " + deleted + " event(s)");
+                if (showStatus) status.setText("清理完成，已删除 " + deleted + " 条过期记录");
                 loadEvents();
             });
         });
@@ -312,7 +334,7 @@ public final class MainActivity extends Activity {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/csv");
-        intent.putExtra(Intent.EXTRA_TITLE, "toast-notification-history.csv");
+        intent.putExtra(Intent.EXTRA_TITLE, "Toast与通知历史记录.csv");
         startActivityForResult(intent, REQUEST_EXPORT);
     }
 
@@ -322,7 +344,7 @@ public final class MainActivity extends Activity {
         if (requestCode != REQUEST_EXPORT || resultCode != RESULT_OK
                 || data == null || data.getData() == null) return;
         Uri destination = data.getData();
-        status.setText("Exporting CSV…");
+        status.setText("正在导出 CSV…");
         databaseExecutor.execute(() -> exportCsv(destination));
     }
 
@@ -358,21 +380,21 @@ public final class MainActivity extends Activity {
                 }
             }
             mainHandler.post(() -> {
-                if (!destroyed) status.setText("Exported " + all.size() + " event(s)");
+                if (!destroyed) status.setText("已导出 " + all.size() + " 条记录");
             });
         } catch (Exception failure) {
             mainHandler.post(() -> {
-                if (!destroyed) status.setText("CSV export failed: " + failure.getMessage());
+                if (!destroyed) status.setText("CSV 导出失败：" + failure.getMessage());
             });
         }
     }
 
     private void confirmClear() {
         new AlertDialog.Builder(this)
-                .setTitle("Clear all history?")
-                .setMessage("This permanently deletes all locally stored events.")
+                .setTitle("确定清空全部记录？")
+                .setMessage("此操作将永久删除本机保存的全部事件记录，且无法恢复。")
                 .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton("Clear", (dialog, which) ->
+                .setPositiveButton("确认清空", (dialog, which) ->
                         databaseExecutor.execute(() -> {
                             database.deleteAll();
                             mainHandler.post(this::loadEvents);
