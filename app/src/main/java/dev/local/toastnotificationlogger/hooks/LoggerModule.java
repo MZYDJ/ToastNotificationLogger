@@ -17,6 +17,6 @@ public final class LoggerModule extends XposedModule {
 
     @Override
     public void onSystemServerStarting(XposedModuleInterface.SystemServerStartingParam param) {
-        log("ToastNotificationLogger loaded in system_server; hooks are not enabled in this development build.");
+        log(android.util.Log.INFO, "ToastNotificationLogger", "Loaded in system_server; hooks are not enabled in this development build.");
     }
 }
