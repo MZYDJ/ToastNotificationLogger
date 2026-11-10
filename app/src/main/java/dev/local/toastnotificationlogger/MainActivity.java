@@ -2,7 +2,9 @@ package dev.local.toastnotificationlogger;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.widget.AdapterView;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -39,6 +41,7 @@ import java.util.concurrent.Executors;
 /** Local event browser with package/type/time filters and CSV export. */
 public final class MainActivity extends Activity {
     private static final int REQUEST_EXPORT = 4102;
+    private static final int[] RETENTION_DAYS = {0, 7, 30, 90, 365};
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
     private final List<EventRecord> events = new ArrayList<>();
@@ -51,6 +54,7 @@ public final class MainActivity extends Activity {
     private EditText packageFilter;
     private Spinner typeFilter;
     private Spinner timeFilter;
+    private Spinner retentionFilter;
     private boolean destroyed;
 
     @Override
@@ -95,6 +99,34 @@ public final class MainActivity extends Activity {
         timeFilter.setAdapter(spinnerAdapter(ranges));
         root.addView(timeFilter);
 
+        LinearLayout retentionRow = new LinearLayout(this);
+        retentionRow.setOrientation(LinearLayout.HORIZONTAL);
+        retentionFilter = new Spinner(this);
+        List<String> retentionOptions = new ArrayList<>();
+        retentionOptions.add("Keep forever");
+        retentionOptions.add("Keep 7 days");
+        retentionOptions.add("Keep 30 days");
+        retentionOptions.add("Keep 90 days");
+        retentionOptions.add("Keep 365 days");
+        retentionFilter.setAdapter(spinnerAdapter(retentionOptions));
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        int savedDays = preferences.getInt("retention_days", 0);
+        retentionFilter.setSelection(retentionIndex(savedDays));
+        retentionFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view,
+                                                 int position, long id) {
+                preferences.edit().putInt("retention_days", RETENTION_DAYS[position]).apply();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+        retentionRow.addView(retentionFilter, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        Button applyRetention = new Button(this);
+        applyRetention.setText("Apply retention");
+        applyRetention.setOnClickListener(v -> cleanupRetention(true));
+        retentionRow.addView(applyRetention);
+        root.addView(retentionRow);
+
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         Button apply = new Button(this);
@@ -126,7 +158,7 @@ public final class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         setContentView(root);
-        loadEvents();
+        if (savedDays > 0) cleanupRetention(false); else loadEvents();
     }
 
     private ArrayAdapter<String> spinnerAdapter(List<String> values) {
@@ -208,6 +240,30 @@ public final class MainActivity extends Activity {
                 .setMessage(details)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
+    }
+
+    private static int retentionIndex(int days) {
+        for (int i = 0; i < RETENTION_DAYS.length; i++) {
+            if (RETENTION_DAYS[i] == days) return i;
+        }
+        return 0;
+    }
+
+    private void cleanupRetention(boolean showStatus) {
+        int days = RETENTION_DAYS[retentionFilter.getSelectedItemPosition()];
+        if (days == 0) {
+            if (showStatus) status.setText("Retention disabled; history is kept indefinitely");
+            return;
+        }
+        long cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000;
+        databaseExecutor.execute(() -> {
+            int deleted = database.deleteOlderThan(cutoff);
+            mainHandler.post(() -> {
+                if (destroyed) return;
+                if (showStatus) status.setText("Retention cleanup removed " + deleted + " event(s)");
+                loadEvents();
+            });
+        });
     }
 
     private void startCsvExport() {
