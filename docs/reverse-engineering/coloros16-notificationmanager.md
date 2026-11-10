@@ -40,7 +40,7 @@ The three overloads are:
 - Public 11-argument `enqueueNotificationInternal(String, String, int, int, String, int, Notification, int, boolean, boolean, boolean): void`
 - Private 13-argument implementation `enqueueNotificationInternal(String, String, int, int, String, int, Notification, int, boolean, PostNotificationTracker, boolean, boolean): boolean`
 
-The 10-argument overload calls the 11-argument overload, which acquires a post tracker and calls the private 13-argument implementation. Hooking the overload chain would therefore create duplicates and could record notifications that are later rejected or fail to post.
+The 10-argument overload calls the 11-argument overload; the 11-argument overload acquires a post tracker and calls the private 13-argument implementation. These delegate calls were found in the DEX invoke instructions. Hooking the overload chain would therefore create duplicates and could record notifications that are later rejected or fail to post.
 
 ### Notification posted / updated
 
@@ -59,7 +59,7 @@ The method name includes `Locked`; hook code must not perform database, file, bi
 - A second private six-argument overload exists:
   `cancelNotificationLocked(NotificationRecord, boolean, int, boolean, String, long): void`
 
-The full eight-argument method contains the substantive removal path, including a call to `NotificationListeners.notifyRemovedLocked(...)`. The six-argument overload is a short wrapper. The exact semantic mapping of the integer/boolean parameters to Android cancellation reason, stats, and flags must be established from all call sites before assigning a user-visible removal reason. Do not guess the reason from parameter position.
+The full eight-argument method contains the substantive removal path, including a call to `NotificationListeners.notifyRemovedLocked(record, reason, stats)`. The six-argument overload delegates to the full eight-argument method, and that full method invokes the listener removal callback. The exact semantic mapping of the integer/boolean parameters to Android cancellation reason, stats, and flags must be established from all call sites before assigning a user-visible removal reason. Do not guess the reason from parameter position.
 
 ## Initial hook selection
 
