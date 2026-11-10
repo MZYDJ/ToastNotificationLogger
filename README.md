@@ -38,7 +38,7 @@ The debug APK is not a signed production release. Install only on a test device 
 
 ## Development status
 
-See [docs/STATUS.md](docs/STATUS.md) for verified, implemented, and outstanding work. Contributions should include tests and clearly distinguish static inspection from runtime validation.
+See [docs/STATUS.md](docs/STATUS.md) for verified, implemented, and outstanding work. The target-device procedure is in [docs/DEVICE-ACCEPTANCE-TEST.md](docs/DEVICE-ACCEPTANCE-TEST.md). Contributions should include tests and clearly distinguish static inspection from runtime validation.
 
 ## License
 
