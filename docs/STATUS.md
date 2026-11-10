@@ -24,6 +24,9 @@ Last updated: 2026-11-10
 - Local event history list and event detail dialog.
 - Exact package-name, event-type, and time-window filters.
 - CSV export through Android's document picker.
+- App labels resolved in the app process for history display and CSV export.
+- Configurable retention policy (keep forever / 7 / 30 / 90 / 365 days), persisted locally and applied at startup or on demand.
+- Excluded-package list persisted locally and enforced in the app-process provider before SQLite insertion.
 - Unit tests for event types, immutable event snapshots, and queue backpressure.
 
 ## Important unverified assumptions / risks
@@ -36,10 +39,10 @@ Last updated: 2026-11-10
 
 ## Not implemented yet
 
-- App-label resolution and richer notification content extraction.
-- Configurable retention UI, excluded-app management, and backup/restore.
+- Richer notification content extraction (large text, messaging style, and other extras).
+- Backup/restore.
 - Queue/transport metrics UI and retry/recovery policy.
-- Gradle wrapper and release signing.
+- Release signing.
 - Device-specific runtime compatibility checks and production acceptance.
 
 ## Validation matrix
@@ -48,8 +51,8 @@ Last updated: 2026-11-10
 |---|---|---|
 | Repository metadata | Passed | Public, default branch `main` |
 | Static firmware inspection | Partial | DEX descriptors and selected call chains inspected |
-| JVM unit tests | Passed on prior source | New hook/transport/UI commits await latest CI |
-| Debug APK assembly | Passed on prior source | New hook/transport/UI commits await latest CI |
+| JVM unit tests | Passed on prior source | Latest wrapper/retention/exclusion commit awaiting CI |
+| Debug APK assembly | Passed on prior source | Latest wrapper/retention/exclusion commit awaiting CI |
 | APK install/runtime | Not run | No target-device installation yet |
 | Hook behavior | Not run | Static hook code committed; runtime not proven |
 | Production acceptance | Not run | No end-to-end capture or stability tests |
