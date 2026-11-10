@@ -28,6 +28,7 @@ final class SystemEventHooks {
     private static final AtomicLong UNQUEUED_WARNINGS = new AtomicLong();
 
     private final XposedInterface xposed;
+    private volatile Context cachedSystemContext;
 
     SystemEventHooks(XposedInterface xposed) {
         this.xposed = xposed;
@@ -198,7 +199,11 @@ final class SystemEventHooks {
     }
 
     private void submit(Object serviceObject, EventRecord event) {
-        Context context = findSystemContext(serviceObject, 0);
+        Context context = cachedSystemContext;
+        if (context == null) {
+            context = findSystemContext(serviceObject, 0);
+            if (context != null) cachedSystemContext = context;
+        }
         if (context == null || !SystemEventDispatcher.submit(context, event)) {
             long count = UNQUEUED_WARNINGS.incrementAndGet();
             if (count == 1 || count % 100 == 0) {
