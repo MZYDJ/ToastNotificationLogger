@@ -8,6 +8,10 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import dev.local.toastnotificationlogger.model.EventRecord;
 import dev.local.toastnotificationlogger.model.EventType;
 
@@ -44,10 +48,21 @@ public final class EventCaptureProvider extends ContentProvider {
             throw new IllegalArgumentException("Unknown event type", invalidType);
         }
 
+        String packageName = extras.getString("package_name");
+        Set<String> excluded = new HashSet<>(getContext().getSharedPreferences(
+                "logger_config", android.content.Context.MODE_PRIVATE)
+                .getStringSet("excluded_packages", Collections.emptySet()));
+        Bundle result = new Bundle();
+        if (packageName != null && excluded.contains(packageName)) {
+            result.putBoolean("stored", true);
+            result.putBoolean("excluded", true);
+            return result;
+        }
+
         EventRecord event = new EventRecord(
                 extras.getLong("timestamp_ms"),
                 type,
-                extras.getString("package_name"),
+                packageName,
                 extras.getString("app_name"),
                 extras.getString("title"),
                 extras.getString("text"),
@@ -56,8 +71,8 @@ public final class EventCaptureProvider extends ContentProvider {
                 nullableInt(extras, "user_id"),
                 nullableInt(extras, "removal_reason"));
         database.insert(event);
-        Bundle result = new Bundle();
         result.putBoolean("stored", true);
+        result.putBoolean("excluded", false);
         return result;
     }
 
