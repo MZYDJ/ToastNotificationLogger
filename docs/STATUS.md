@@ -17,7 +17,9 @@ Last updated: 2026-11-10
 - libxposed API 102 entry class and module metadata.
 - Narrow system_server scope declaration.
 - CI workflow for JVM unit tests and debug APK assembly.
-- Initial event type enum and bootstrap tests.
+- Initial event type enum and immutable event snapshot model.
+- App-process SQLite persistence foundation with timestamp/package/type indexes, recent-event filtering, retention deletion, and delete-all support.
+- Unit tests for event types and immutable event snapshots.
 - ColorOS 16 static reverse-engineering notes.
 
 ## Not implemented yet
@@ -25,7 +27,8 @@ Last updated: 2026-11-10
 - Runtime Toast hooks.
 - Runtime notification post/update/remove hooks.
 - Bounded asynchronous transport from system_server to the app process.
-- SQLite persistence, retention, filtering, detail view, exclusions, or CSV export.
+- Runtime connection from the capture transport into SQLite.
+- User-facing event browsing, detail view, configurable retention, exclusions, and CSV export.
 - User-facing event browser and configuration UI.
 - Runtime permission / framework compatibility checks.
 - Release signing and installable release distribution.
@@ -36,7 +39,7 @@ Last updated: 2026-11-10
 |---|---|---|
 | Repository metadata | Passed | Public, default branch `main` |
 | Static firmware inspection | Partial | DEX descriptors and selected method-body call chains inspected; lock/call-site semantics remain |
-| JVM unit tests | Passed | GitHub Actions run #7 |
+| JVM unit tests | Passed | GitHub Actions run #7; new persistence-model tests awaiting latest CI |
 | Debug APK assembly | Passed | GitHub Actions run #7 |
 | APK install/runtime | Not run | No target-device installation yet |
 | Hook behavior | Not run | Hooks remain disabled |
