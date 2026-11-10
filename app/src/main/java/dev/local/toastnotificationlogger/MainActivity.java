@@ -31,6 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -109,7 +112,7 @@ public final class MainActivity extends Activity {
         retentionOptions.add("Keep 90 days");
         retentionOptions.add("Keep 365 days");
         retentionFilter.setAdapter(spinnerAdapter(retentionOptions));
-        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences preferences = getSharedPreferences("logger_config", MODE_PRIVATE);
         int savedDays = preferences.getInt("retention_days", 0);
         retentionFilter.setSelection(retentionIndex(savedDays));
         retentionFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -143,6 +146,11 @@ public final class MainActivity extends Activity {
         export.setText("Export CSV");
         export.setOnClickListener(v -> startCsvExport());
         actions.addView(export);
+
+        Button excluded = new Button(this);
+        excluded.setText("Excluded apps");
+        excluded.setOnClickListener(v -> manageExcludedApps());
+        actions.addView(excluded);
 
         Button clear = new Button(this);
         clear.setText("Clear all");
@@ -239,6 +247,40 @@ public final class MainActivity extends Activity {
                 .setTitle("Event details")
                 .setMessage(details)
                 .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private void manageExcludedApps() {
+        SharedPreferences preferences = getSharedPreferences("logger_config", MODE_PRIVATE);
+        Set<String> excluded = new HashSet<>(preferences.getStringSet(
+                "excluded_packages", Collections.emptySet()));
+        EditText packageName = new EditText(this);
+        packageName.setSingleLine(true);
+        packageName.setHint("Example: com.example.app");
+        String current = excluded.isEmpty()
+                ? "No excluded packages"
+                : "Currently excluded:\\n" + android.text.TextUtils.join("\\n", excluded);
+        new AlertDialog.Builder(this)
+                .setTitle("Excluded applications")
+                .setMessage(current)
+                .setView(packageName)
+                .setPositiveButton("Exclude", (dialog, which) -> {
+                    String value = packageName.getText().toString().trim();
+                    if (value.isEmpty()) return;
+                    excluded.add(value);
+                    preferences.edit().putStringSet(
+                            "excluded_packages", new HashSet<>(excluded)).apply();
+                    status.setText("Excluded " + value);
+                })
+                .setNeutralButton("Remove", (dialog, which) -> {
+                    String value = packageName.getText().toString().trim();
+                    if (value.isEmpty()) return;
+                    excluded.remove(value);
+                    preferences.edit().putStringSet(
+                            "excluded_packages", new HashSet<>(excluded)).apply();
+                    status.setText("Removed exclusion for " + value);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
 
