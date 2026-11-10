@@ -5,6 +5,12 @@
         android:label="ToastNotificationLogger"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <provider
+            android:name=".storage.EventCaptureProvider"
+            android:authorities="${applicationId}.events"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:grantUriPermissions="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
