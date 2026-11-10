@@ -20,7 +20,7 @@ AOSP source is useful as a reference but is not a substitute for inspecting the 
 
 ## Build
 
-The project uses Gradle and Android Gradle Plugin. With Gradle 8.13 and Android SDK Platform 36 installed, use:
+The project includes the official Gradle 8.13 Wrapper; no separate Gradle installation is needed. Install Android SDK Platform 36, then run:
 
 ```bash
 ./gradlew testDebugUnitTest
