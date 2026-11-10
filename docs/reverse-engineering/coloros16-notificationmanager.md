@@ -48,7 +48,7 @@ Private method:
 
 `notifyListenersPostedAndLogLocked(NotificationRecord, NotificationRecord, PostNotificationTracker, NotificationReported): void`
 
-The method prepares listener notification work and posts it to the NMS worker handler. It is a late lifecycle point and receives both the prior and current `NotificationRecord`. This is a promising point for distinguishing a first post from an update (prior record absent vs present), but its exact call-site relationship and lock context still need to be confirmed before production hook activation.
+The method prepares listener notification work and posts it to the NMS worker handler. The Android 16 reference implementation declares the parameter order as current record `r`, then previous record `old`; the ColorOS DEX forwards its first two parameters unchanged to `prepareNotifyPostedLocked`. The hook currently uses that convention to distinguish a first post (previous record absent) from an update. This is strongly supported but still needs runtime confirmation on the target ROM. Android 16 reference: https://android.googlesource.com/platform/frameworks/base/%2B/refs/heads/android16-release/services/core/java/com/android/server/notification/NotificationManagerService.java
 
 The method name includes `Locked`; hook code must not perform database, file, binder-to-app, or other potentially blocking work synchronously here. Only copy bounded primitive/string data and enqueue it to a non-blocking in-process queue.
 
@@ -59,7 +59,7 @@ The method name includes `Locked`; hook code must not perform database, file, bi
 - A second private six-argument overload exists:
   `cancelNotificationLocked(NotificationRecord, boolean, int, boolean, String, long): void`
 
-The full eight-argument method contains the substantive removal path, including a call to `NotificationListeners.notifyRemovedLocked(record, reason, stats)`. The six-argument overload delegates to the full eight-argument method, and that full method invokes the listener removal callback. The exact semantic mapping of the integer/boolean parameters to Android cancellation reason, stats, and flags must be established from all call sites before assigning a user-visible removal reason. Do not guess the reason from parameter position.
+The full eight-argument method contains the substantive removal path, including a call to `NotificationListeners.notifyRemovedLocked(record, reason, stats)`. The six-argument overload delegates to the full eight-argument method, and that full method invokes the listener removal callback. The matching Android 16 reference signature places the cancellation reason at argument index 2 (after the record and send-delete flag); the current hook provisionally reads this index. ColorOS has the same eight-argument descriptor and its full method calls `notifyRemovedLocked`, but DEX call-site tracing and runtime checks must still confirm that OEM semantics match before this value is presented as authoritative. Android 16 reference: https://android.googlesource.com/platform/frameworks/base/%2B/refs/heads/android16-release/services/core/java/com/android/server/notification/NotificationManagerService.java
 
 ## Initial hook selection
 
@@ -67,8 +67,8 @@ The full eight-argument method contains the substantive removal path, including 
 |---|---|---|
 | Text Toast request | Shared private 8-argument `enqueueToast` | High for request capture; verify runtime class/loader and argument values |
 | Custom Toast request | Same shared private 8-argument `enqueueToast` | High for request capture; text nullability needs runtime validation |
-| Notification posted/updated | `notifyListenersPostedAndLogLocked` | Promising; inspect call sites, old/new record semantics, and lock scope |
-| Notification removed | Full private 8-argument `cancelNotificationLocked` | Promising; map cancellation reason and confirm invocation coverage |
+| Notification posted/updated | `notifyListenersPostedAndLogLocked` | Implemented using current/old record ordering; runtime semantics and lock scope still need confirmation |
+| Notification removed | Full private 8-argument `cancelNotificationLocked` | Implemented; reason index 2 is provisional pending OEM call-site/runtime verification |
 
 ## Safety and implementation constraints
 
