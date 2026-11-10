@@ -21,7 +21,9 @@ Last updated: 2026-11-10
 - Dedicated daemon worker for ContentProvider IPC; no database or synchronous app-process IPC is called directly by the NMS hook callback.
 - Exported ContentProvider protected by `android.permission.DUMP`, with an additional caller-permission check.
 - App-process SQLite persistence with timestamp/package/type indexes, recent-event query, retention deletion primitive, and delete-all.
-- Basic local event history list and event detail dialog.
+- Local event history list and event detail dialog.
+- Exact package-name, event-type, and time-window filters.
+- CSV export through Android's document picker.
 - Unit tests for event types, immutable event snapshots, and queue backpressure.
 
 ## Important unverified assumptions / risks
@@ -35,7 +37,7 @@ Last updated: 2026-11-10
 ## Not implemented yet
 
 - App-label resolution and richer notification content extraction.
-- Configurable retention UI, excluded-app management, search filters, CSV export, and backup/restore.
+- Configurable retention UI, excluded-app management, and backup/restore.
 - Queue/transport metrics UI and retry/recovery policy.
 - Gradle wrapper and release signing.
 - Device-specific runtime compatibility checks and production acceptance.
