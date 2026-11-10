@@ -19,6 +19,7 @@ Last updated: 2026-11-10
 - CI workflow for JVM unit tests and debug APK assembly.
 - Initial event type enum and immutable event snapshot model.
 - App-process SQLite persistence foundation with timestamp/package/type indexes, recent-event filtering, retention deletion, and delete-all support.
+- Bounded non-blocking event queue (capacity 256 by default), drop-newest overflow policy, and dropped-event counter, with unit tests.
 - Unit tests for event types and immutable event snapshots.
 - ColorOS 16 static reverse-engineering notes.
 
@@ -26,7 +27,7 @@ Last updated: 2026-11-10
 
 - Runtime Toast hooks.
 - Runtime notification post/update/remove hooks.
-- Bounded asynchronous transport from system_server to the app process.
+- Queue consumer and asynchronous system_server-to-app-process IPC transport.
 - Runtime connection from the capture transport into SQLite.
 - User-facing event browsing, detail view, configurable retention, exclusions, and CSV export.
 - User-facing event browser and configuration UI.
