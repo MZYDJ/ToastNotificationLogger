@@ -32,6 +32,8 @@ final class SystemEventHooks {
     }
 
     void install(ClassLoader classLoader) {
+        // Allocate the daemon worker before any notification-lock callback can run.
+        SystemEventDispatcher.start();
         installToast(classLoader);
         installNotificationPost(classLoader);
         installNotificationRemoval(classLoader);
@@ -119,11 +121,35 @@ final class SystemEventHooks {
                         }
                         return result;
                     });
+            deoptimizePostCallers(nms);
             xposed.log(android.util.Log.INFO, TAG,
                     "Installed notification post/update hook: " + target);
         } catch (ReflectiveOperationException | RuntimeException failure) {
             xposed.log(android.util.Log.ERROR, TAG,
                     "Unable to install notification post/update hook", failure);
+        }
+    }
+
+    /**
+     * The post callback is very small and can be inlined by ART. Deoptimize its
+     * synthetic access bridge and the NMS implementation that calls that bridge
+     * so the hooked method remains an actual invocation.
+     */
+    private void deoptimizePostCallers(Class<?> nms) {
+        for (Method method : nms.getDeclaredMethods()) {
+            String name = method.getName();
+            boolean bridge = name.equals("-$Nest$mnotifyListenersPostedAndLogLocked");
+            boolean implementation = name.equals("enqueueNotificationInternal")
+                    && method.getParameterTypes().length == 13;
+            if (!bridge && !implementation) continue;
+            try {
+                boolean deoptimized = xposed.deoptimize(method);
+                xposed.log(android.util.Log.INFO, TAG,
+                        "Post-hook caller deoptimization " + deoptimized + ": " + method);
+            } catch (RuntimeException failure) {
+                xposed.log(android.util.Log.WARN, TAG,
+                        "Unable to deoptimize post-hook caller: " + method, failure);
+            }
         }
     }
 
