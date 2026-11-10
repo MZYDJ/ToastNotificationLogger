@@ -3,6 +3,10 @@ plugins {
 }
 
 android {
+    buildFeatures {
+        buildConfig = true
+    }
+
     namespace = "dev.local.toastnotificationlogger"
     compileSdk = 36
 
