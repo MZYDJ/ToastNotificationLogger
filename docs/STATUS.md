@@ -17,13 +17,14 @@ Last updated: 2026-11-10
   - shared ColorOS text/custom Toast enqueue implementation;
   - notification post/update lifecycle callback;
   - full notification cancellation implementation.
+- ART deoptimization of the NMS synthetic post bridge and its 13-argument implementation caller to reduce the risk of the small callback being inlined past the hook.
 - Bounded non-blocking capture queue (capacity 256, drop-newest policy, drop counter).
 - Dedicated daemon worker for ContentProvider IPC; no database or synchronous app-process IPC is called directly by the NMS hook callback.
 - Exported ContentProvider protected by `android.permission.DUMP`, with an additional caller-permission check.
 - App-process SQLite persistence with timestamp/package/type indexes, recent-event query, retention deletion primitive, and delete-all.
 - Local event history list and event detail dialog.
 - Exact package-name, event-type, and time-window filters.
-- CSV export through Android's document picker.
+- CSV export through Android's document picker, with formula-injection mitigation.
 - App labels resolved in the app process for history display and CSV export.
 - Configurable retention policy (keep forever / 7 / 30 / 90 / 365 days), persisted locally and applied at startup or on demand.
 - Excluded-package list persisted locally and enforced in the app-process provider before SQLite insertion.
@@ -51,16 +52,16 @@ Last updated: 2026-11-10
 |---|---|---|
 | Repository metadata | Passed | Public, default branch `main` |
 | Static firmware inspection | Partial | DEX descriptors and selected call chains inspected |
-| JVM unit tests | Passed on prior source | Latest wrapper/retention/exclusion commit awaiting CI |
-| Debug APK assembly | Passed on prior source | Latest wrapper/retention/exclusion commit awaiting CI |
+| JVM unit tests | Passed | Latest source commit `d0c1f21`, Actions run #55 |
+| Debug APK assembly | Passed | Latest source commit `d0c1f21`, Actions run #55 |
+| APK static inspection | Passed | Xposed entry, `system` scope, and exact synthetic bridge string verified |
 | APK install/runtime | Not run | No target-device installation yet |
 | Hook behavior | Not run | Static hook code committed; runtime not proven |
 | Production acceptance | Not run | No end-to-end capture or stability tests |
 
 ## Next acceptance gates
 
-1. Obtain a clean CI pass for the latest commit and inspect the generated APK.
-2. Verify module activation and system_server hook installation in Vector 2.2.
+1. Install the debug APK and verify module activation and system_server hook installation in Vector 2.2.
 3. Confirm Toast text/custom classification and notification post/update/remove events using controlled test apps.
 4. Confirm provider permission, queue overflow accounting, app-process death, reboot persistence, and no system_server stalls.
 5. Verify cancellation-reason mapping against ColorOS DEX call sites.
