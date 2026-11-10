@@ -16,6 +16,7 @@ import io.github.libxposed.api.XposedInterface.ExceptionMode;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** Installs the ColorOS 16 NotificationManagerService capture hooks. */
 final class SystemEventHooks {
@@ -24,6 +25,7 @@ final class SystemEventHooks {
     private static final String RECORD =
             "com.android.server.notification.NotificationRecord";
     private static final int MAX_TEXT_LENGTH = 4000;
+    private static final AtomicLong UNQUEUED_WARNINGS = new AtomicLong();
 
     private final XposedInterface xposed;
 
@@ -196,8 +198,12 @@ final class SystemEventHooks {
     private void submit(Object serviceObject, EventRecord event) {
         Context context = findSystemContext(serviceObject, 0);
         if (context == null || !SystemEventDispatcher.submit(context, event)) {
-            xposed.log(android.util.Log.WARN, TAG,
-                    "Event not queued; context unavailable or queue full");
+            long count = UNQUEUED_WARNINGS.incrementAndGet();
+            if (count == 1 || count % 100 == 0) {
+                xposed.log(android.util.Log.WARN, TAG,
+                        "Event not queued (count=" + count
+                                + "); context unavailable or queue full");
+            }
         }
     }
 
