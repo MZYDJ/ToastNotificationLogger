@@ -1,0 +1,77 @@
+name: Publish pre-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without the leading v (for example 0.1.0-rc.1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version
+        shell: bash
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Version must look like 0.1.0 or 0.1.0-rc.1"
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Generate SHA-256 checksum
+        run: |
+          cd app/build/outputs/apk/debug
+          sha256sum app-debug.apk > app-debug.apk.sha256
+
+      - name: Create GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          target_commitish: main
+          name: ToastNotificationLogger v${{ inputs.version }}
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            **预发布版本（Debug APK）**
+
+            - 本版本通过 GitHub Actions 单元测试和 APK 构建。
+            - 尚未完成 OPPO PKT110 / ColorOS 16 的完整稳定性验收。
+            - 请在安装前确认 Vector 模块禁用/恢复方式可用。
+            - APK 附带 SHA-256 校验文件。
+          files: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+          fail_on_unmatched_files: true
