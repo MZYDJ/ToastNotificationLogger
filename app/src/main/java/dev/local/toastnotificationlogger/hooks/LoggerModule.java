@@ -3,13 +3,7 @@ package dev.local.toastnotificationlogger.hooks;
 import io.github.libxposed.api.XposedModule;
 import io.github.libxposed.api.XposedModuleInterface;
 
-/**
- * libxposed API 102 entry point.
- *
- * Hook installation is intentionally deferred until the exact ColorOS method
- * bodies and lifecycle timing are validated. This class currently performs no
- * hooks and must not be presented as a working capture implementation.
- */
+/** libxposed API 102 entry point for system_server capture. */
 public final class LoggerModule extends XposedModule {
     public LoggerModule() {
         super();
@@ -17,6 +11,8 @@ public final class LoggerModule extends XposedModule {
 
     @Override
     public void onSystemServerStarting(XposedModuleInterface.SystemServerStartingParam param) {
-        log(android.util.Log.INFO, "ToastNotificationLogger", "Loaded in system_server; hooks are not enabled in this development build.");
+        log(android.util.Log.INFO, "ToastNotificationLogger",
+                "Starting ColorOS 16 NotificationManagerService hook installation");
+        new SystemEventHooks(this).install(param.getClassLoader());
     }
 }
