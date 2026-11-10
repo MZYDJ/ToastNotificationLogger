@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,6 +29,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +43,7 @@ public final class MainActivity extends Activity {
     private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
     private final List<EventRecord> events = new ArrayList<>();
     private final List<String> rows = new ArrayList<>();
+    private final Map<String, String> appLabels = new HashMap<>();
 
     private EventDatabase database;
     private ArrayAdapter<String> adapter;
@@ -153,16 +158,25 @@ public final class MainActivity extends Activity {
         databaseExecutor.execute(() -> {
             List<EventRecord> loaded = database.queryRecent(
                     5000, selectedPackage, eventType, from, now);
+            Map<String, String> labels = new HashMap<>();
+            for (EventRecord event : loaded) {
+                if (event.packageName != null && !labels.containsKey(event.packageName)) {
+                    labels.put(event.packageName, resolveAppLabel(event.packageName));
+                }
+            }
             mainHandler.post(() -> {
                 if (destroyed) return;
                 events.clear();
                 events.addAll(loaded);
+                appLabels.clear();
+                appLabels.putAll(labels);
                 rows.clear();
                 SimpleDateFormat format = new SimpleDateFormat(
                         "MM-dd HH:mm:ss", Locale.getDefault());
                 for (EventRecord event : loaded) {
                     String packageLabel = event.packageName == null
-                            ? "(unknown package)" : event.packageName;
+                            ? "(unknown package)"
+                            : appLabels.getOrDefault(event.packageName, event.packageName);
                     String summary = firstNonEmpty(event.title, event.text);
                     String row = format.format(new Date(event.timestampMillis))
                             + "  [" + event.type.name() + "]\n"
@@ -227,7 +241,7 @@ public final class MainActivity extends Activity {
                     writer.write(csv(Long.toString(event.timestampMillis))); writer.write(',');
                     writer.write(csv(event.type.name())); writer.write(',');
                     writer.write(csv(event.packageName)); writer.write(',');
-                    writer.write(csv(event.appName)); writer.write(',');
+                    writer.write(csv(resolveAppLabel(event.packageName))); writer.write(',');
                     writer.write(csv(event.title)); writer.write(',');
                     writer.write(csv(event.text)); writer.write(',');
                     writer.write(csv(event.notificationKey)); writer.write(',');
@@ -257,6 +271,17 @@ public final class MainActivity extends Activity {
                             mainHandler.post(this::loadEvents);
                         }))
                 .show();
+    }
+
+    private String resolveAppLabel(String packageName) {
+        if (packageName == null || packageName.isEmpty()) return "";
+        try {
+            ApplicationInfo info = getPackageManager().getApplicationInfo(packageName, 0);
+            CharSequence label = getPackageManager().getApplicationLabel(info);
+            return label == null ? packageName : label.toString();
+        } catch (PackageManager.NameNotFoundException | RuntimeException ignored) {
+            return packageName;
+        }
     }
 
     private static String csv(String value) {
