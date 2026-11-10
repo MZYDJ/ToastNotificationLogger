@@ -259,7 +259,7 @@ public final class MainActivity extends Activity {
         packageName.setHint("Example: com.example.app");
         String current = excluded.isEmpty()
                 ? "No excluded packages"
-                : "Currently excluded:\\n" + android.text.TextUtils.join("\\n", excluded);
+                : "Currently excluded:\n" + android.text.TextUtils.join("\\n", excluded);
         new AlertDialog.Builder(this)
                 .setTitle("Excluded applications")
                 .setMessage(current)
