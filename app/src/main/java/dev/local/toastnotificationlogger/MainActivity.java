@@ -196,7 +196,7 @@ public final class MainActivity extends Activity {
         String details = "Time: " + new Date(event.timestampMillis)
                 + "\nType: " + event.type
                 + "\nPackage: " + value(event.packageName)
-                + "\nApp: " + value(event.appName)
+                + "\nApp: " + value(appLabels.get(event.packageName))
                 + "\nTitle: " + value(event.title)
                 + "\nText: " + value(event.text)
                 + "\nNotification key: " + value(event.notificationKey)
