@@ -23,8 +23,8 @@ AOSP source is useful as a reference but is not a substitute for inspecting the 
 The project uses Gradle and Android Gradle Plugin. With Gradle 8.13 and Android SDK Platform 36 installed, use:
 
 ```bash
-gradle testDebugUnitTest
-gradle assembleDebug
+./gradlew testDebugUnitTest
+./gradlew assembleDebug
 ```
 
 The debug APK is not a signed production release. Install only on a test device and keep a recovery path available.
