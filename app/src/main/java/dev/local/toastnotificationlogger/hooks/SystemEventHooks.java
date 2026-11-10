@@ -140,7 +140,9 @@ final class SystemEventHooks {
     private void deoptimizePostCallers(Class<?> nms) {
         for (Method method : nms.getDeclaredMethods()) {
             String name = method.getName();
-            boolean bridge = name.equals("-" + '
+            String bridgeName = "-" + (char) 36 + (char) 36 + "Nest" + (char) 36
+                    + "mnotifyListenersPostedAndLogLocked";
+            boolean bridge = name.equals(bridgeName);
             boolean implementation = name.equals("enqueueNotificationInternal")
                     && method.getParameterTypes().length == 13;
             if (!bridge && !implementation) continue;
