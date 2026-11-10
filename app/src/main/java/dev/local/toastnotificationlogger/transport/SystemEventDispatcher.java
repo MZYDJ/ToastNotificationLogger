@@ -31,6 +31,11 @@ public final class SystemEventDispatcher {
 
     private SystemEventDispatcher() {}
 
+    /** Start the worker during system_server initialization, before the first hook callback. */
+    public static void start() {
+        startWorker();
+    }
+
     public static boolean submit(Context context, EventRecord event) {
         if (context == null || event == null) return false;
         if (systemContext == null) systemContext = context;
