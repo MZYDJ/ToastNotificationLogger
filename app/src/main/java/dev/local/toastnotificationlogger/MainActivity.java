@@ -241,7 +241,7 @@ public final class MainActivity extends Activity {
                             : appLabels.getOrDefault(event.packageName, event.packageName);
                     String summary = firstNonEmpty(event.title, event.text);
                     String row = format.format(new Date(event.timestampMillis))
-                            + "  [" + event.type.name() + "]\n"
+                            + "  [" + eventTypeLabel(event.type) + "]\n"
                             + packageLabel
                             + (summary.isEmpty() ? "" : "\n" + summary);
                     rows.add(row);
@@ -256,15 +256,15 @@ public final class MainActivity extends Activity {
         if (position < 0 || position >= events.size()) return;
         EventRecord event = events.get(position);
         String details = "时间：" + new Date(event.timestampMillis)
-                + "\nType: " + event.type
-                + "\nPackage: " + value(event.packageName)
-                + "\nApp: " + value(appLabels.get(event.packageName))
-                + "\nTitle: " + value(event.title)
-                + "\nText: " + value(event.text)
-                + "\nNotification key: " + value(event.notificationKey)
-                + "\nNotification ID: " + value(event.notificationId)
-                + "\nUser ID: " + value(event.userId)
-                + "\nRemoval reason: " + value(event.removalReason);
+                + "\n事件类型：" + eventTypeLabel(event.type)
+                + "\n包名：" + value(event.packageName)
+                + "\n应用：" + value(appLabels.get(event.packageName))
+                + "\n标题：" + value(event.title)
+                + "\n内容：" + value(event.text)
+                + "\n通知键：" + value(event.notificationKey)
+                + "\n通知 ID：" + value(event.notificationId)
+                + "\n用户 ID：" + value(event.userId)
+                + "\n撤销原因：" + value(event.removalReason);
         new AlertDialog.Builder(this)
                 .setTitle("事件详情")
                 .setMessage(details)
@@ -281,7 +281,7 @@ public final class MainActivity extends Activity {
         packageName.setHint("输入包名，例如 com.example.app");
         String current = excluded.isEmpty()
                 ? "当前没有排除任何应用"
-                : "Currently excluded:\n" + android.text.TextUtils.join("\\n", excluded);
+                : "当前已排除的应用：\n" + android.text.TextUtils.join("\n", excluded);
         new AlertDialog.Builder(this)
                 .setTitle("管理排除应用")
                 .setMessage(current)
