@@ -335,11 +335,20 @@ public final class MainActivity extends Activity {
             try (Writer writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8)) {
                 writer.write("timestamp_ms,event_type,package_name,app_name,title,text,"
                         + "notification_key,notification_id,user_id,removal_reason\n");
+                Map<String, String> exportLabels = new HashMap<>();
                 for (EventRecord event : all) {
+                    String packageName = event.packageName;
+                    String appLabel = "";
+                    if (packageName != null) {
+                        if (!exportLabels.containsKey(packageName)) {
+                            exportLabels.put(packageName, resolveAppLabel(packageName));
+                        }
+                        appLabel = exportLabels.get(packageName);
+                    }
                     writer.write(csv(Long.toString(event.timestampMillis))); writer.write(',');
                     writer.write(csv(event.type.name())); writer.write(',');
                     writer.write(csv(event.packageName)); writer.write(',');
-                    writer.write(csv(resolveAppLabel(event.packageName))); writer.write(',');
+                    writer.write(csv(appLabel)); writer.write(',');
                     writer.write(csv(event.title)); writer.write(',');
                     writer.write(csv(event.text)); writer.write(',');
                     writer.write(csv(event.notificationKey)); writer.write(',');
@@ -384,6 +393,13 @@ public final class MainActivity extends Activity {
 
     private static String csv(String value) {
         String safe = value == null ? "" : value;
+        if (!safe.isEmpty()) {
+            char first = safe.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@'
+                    || first == '\\t' || first == '\\r') {
+                safe = "'" + safe;
+            }
+        }
         return "\"" + safe.replace("\"", "\"\"") + "\"";
     }
 
