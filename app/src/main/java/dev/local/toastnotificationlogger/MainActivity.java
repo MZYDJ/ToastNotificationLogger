@@ -156,8 +156,11 @@ public final class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         destroyed = true;
-        databaseExecutor.shutdownNow();
-        if (database != null) database.close();
+        if (database != null) {
+            EventDatabase closingDatabase = database;
+            databaseExecutor.execute(closingDatabase::close);
+        }
+        databaseExecutor.shutdown();
         super.onDestroy();
     }
 }
